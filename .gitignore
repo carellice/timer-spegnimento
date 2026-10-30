@@ -1,0 +1,7 @@
+# Gli eseguibili compilati sono distribuiti nelle release.
+*.exe
+*.pdb
+*.ico
+.vs/
+bin/
+obj/
