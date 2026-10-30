@@ -1,4 +1,4 @@
-// Timer spegnimento: programma lo spegnimento del PC e la chiusura dei programmi aperti.
+// Timer spegnimento: programma lo spegnimento o il riavvio del PC e la chiusura dei programmi aperti.
 // Compilare con build.bat (usa il csc del .NET Framework già presente in Windows, C# 5).
 using System;
 using System.Collections.Generic;
@@ -57,7 +57,8 @@ static class Win32
 class Finestra : Form
 {
     DateTime? spegniAlle, chiudiAlle;
-    bool chiusoPerSpegnimento, esci;
+    bool chiusoPerSpegnimento, esci, riavvioProgrammato;
+    ComboBox azioneComputer;
 
     RadioButton rbSpMin, rbSpOre, rbChMin, rbChOre;
     NumericUpDown numSpMin, numChMin, numSecPrima;
@@ -76,27 +77,32 @@ class Finestra : Form
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(410, 470);
+        ClientSize = new Size(410, 506);
         IntPtr grande, piccola;
         if (Win32.ExtractIconEx("shell32.dll", 27, out grande, out piccola, 1) > 0) Icon = Icon.FromHandle(grande);
 
         // --- spegnimento ---
-        var gSp = Gruppo("Spegnimento computer", 12, 205);
-        rbSpMin = Radio(gSp, "Tra", 18, 30, true);
-        numSpMin = Numero(gSp, 100, 28, 1, 10080, 30, rbSpMin);
-        Etichetta(gSp, "minuti", 172, 31);
-        rbSpOre = Radio(gSp, "Alle ore", 18, 62, false);
-        oraSp = Ora(gSp, 100, 60, rbSpOre);
-        chkChiudiPrima = new CheckBox { Text = "Chiudi i programmi", Location = new Point(18, 98), AutoSize = true, Checked = true };
+        var gSp = Gruppo("Spegnimento o riavvio computer", 12, 241);
+        Etichetta(gSp, "Azione", 18, 30);
+        azioneComputer = new ComboBox { Location = new Point(100, 27), Width = 170, DropDownStyle = ComboBoxStyle.DropDownList };
+        azioneComputer.Items.AddRange(new object[] { "Spegni il computer", "Riavvia il computer" });
+        azioneComputer.SelectedIndex = 0;
+        gSp.Controls.Add(azioneComputer);
+        rbSpMin = Radio(gSp, "Tra", 18, 66, true);
+        numSpMin = Numero(gSp, 100, 64, 1, 10080, 30, rbSpMin);
+        Etichetta(gSp, "minuti", 172, 67);
+        rbSpOre = Radio(gSp, "Alle ore", 18, 98, false);
+        oraSp = Ora(gSp, 100, 96, rbSpOre);
+        chkChiudiPrima = new CheckBox { Text = "Chiudi i programmi", Location = new Point(18, 134), AutoSize = true, Checked = true };
         gSp.Controls.Add(chkChiudiPrima);
-        numSecPrima = Numero(gSp, 200, 96, 5, 600, 20, null);
-        Etichetta(gSp, "secondi prima", 272, 99);
-        Bottone(gSp, "Programma", 18, 132, 170, delegate { ProgrammaSpegnimento(); });
-        Bottone(gSp, "Annulla", 198, 132, 170, delegate { AnnullaSpegnimento(); });
-        statoSp = Stato(gSp, 172);
+        numSecPrima = Numero(gSp, 200, 132, 5, 600, 20, null);
+        Etichetta(gSp, "secondi prima", 272, 135);
+        Bottone(gSp, "Programma", 18, 168, 170, delegate { ProgrammaSpegnimento(); });
+        Bottone(gSp, "Annulla", 198, 168, 170, delegate { AnnullaSpegnimento(); });
+        statoSp = Stato(gSp, 208);
 
         // --- chiusura programmi ---
-        var gCh = Gruppo("Chiusura programmi", 230, 228);
+        var gCh = Gruppo("Chiusura programmi", 266, 228);
         rbChMin = Radio(gCh, "Tra", 18, 30, true);
         numChMin = Numero(gCh, 100, 28, 1, 10080, 30, rbChMin);
         Etichetta(gCh, "minuti", 172, 31);
@@ -183,13 +189,20 @@ class Finestra : Form
         return p.ExitCode;
     }
 
+    internal static string ComandoComputer(bool riavvio, int secondi)
+    {
+        return (riavvio ? "/r /t " : "/s /t ") + secondi;
+    }
+
     void ProgrammaSpegnimento()
     {
         var t = Bersaglio(rbSpMin, numSpMin, oraSp);
         int sec = (int)Math.Ceiling((t - DateTime.Now).TotalSeconds);
         Shutdown("/a");   // sostituisce un eventuale spegnimento già programmato
-        int rc = Shutdown("/s /t " + sec);
-        if (rc != 0) { MessageBox.Show(this, "Impossibile programmare lo spegnimento (codice " + rc + ").", Text, MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
+        bool riavvio = azioneComputer.SelectedIndex == 1;
+        int rc = Shutdown(ComandoComputer(riavvio, sec));
+        if (rc != 0) { MessageBox.Show(this, "Impossibile programmare " + (riavvio ? "il riavvio" : "lo spegnimento") + " (codice " + rc + ").", Text, MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
+        riavvioProgrammato = riavvio;
         spegniAlle = t;
         chiusoPerSpegnimento = false;
         Aggiorna();
@@ -200,7 +213,7 @@ class Finestra : Form
         bool cera = Shutdown("/a") == 0 || spegniAlle != null;
         spegniAlle = null;
         Aggiorna();
-        if (!cera) statoSp.Text = "Nessuno spegnimento programmato.";
+        if (!cera) statoSp.Text = "Nessuno spegnimento o riavvio attivo.";
     }
 
     void ProgrammaChiusura()
@@ -241,14 +254,14 @@ class Finestra : Form
     {
         statoSp.ForeColor = spegniAlle != null ? Color.Firebrick : SystemColors.GrayText;
         statoSp.Text = spegniAlle != null
-            ? "Spegnimento alle " + spegniAlle.Value.ToString("HH:mm") + "  ·  mancano " + Mancano(spegniAlle.Value)
-            : "Nessuno spegnimento programmato.";
+            ? (riavvioProgrammato ? "Riavvio alle " : "Spegnimento alle ") + spegniAlle.Value.ToString("HH:mm") + "  ·  mancano " + Mancano(spegniAlle.Value)
+            : "Nessuno spegnimento o riavvio attivo.";
         statoCh.ForeColor = chiudiAlle != null ? Color.DarkOrange : SystemColors.GrayText;
         statoCh.Text = chiudiAlle != null
             ? "Chiusura alle " + chiudiAlle.Value.ToString("HH:mm") + "  ·  mancano " + Mancano(chiudiAlle.Value)
             : "Nessuna chiusura programmata.";
         string t = "Timer spegnimento";
-        if (spegniAlle != null) t += "\nSpegnimento tra " + Mancano(spegniAlle.Value);
+        if (spegniAlle != null) t += "\n" + (riavvioProgrammato ? "Riavvio tra " : "Spegnimento tra ") + Mancano(spegniAlle.Value);
         if (chiudiAlle != null) t += "\nChiusura tra " + Mancano(chiudiAlle.Value);
         tray.Text = t.Length > 63 ? t.Substring(0, 63) : t;
     }

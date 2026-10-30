@@ -4,9 +4,9 @@
 
 # Timer spegnimento
 
-**Scegli quando spegnere il PC. Al resto pensa Windows.**
+**Scegli quando spegnere o riavviare il PC. Al resto pensa Windows.**
 
-Una piccola app per Windows, in italiano, per programmare lo spegnimento del computer e la chiusura delle finestre aperte.
+Una piccola app per Windows, in italiano, per programmare lo spegnimento o il riavvio del computer e la chiusura delle finestre aperte.
 
 [Scarica l’app](../../releases/latest) · [Come si usa](#come-si-usa) · [Compilazione](#compilazione)
 
@@ -18,7 +18,7 @@ Una piccola app per Windows, in italiano, per programmare lo spegnimento del com
 
 ## Cosa puoi fare
 
-- **Programmare lo spegnimento** tra un certo numero di minuti oppure a un’ora precisa.
+- **Programmare lo spegnimento o il riavvio** tra un certo numero di minuti oppure a un’ora precisa.
 - **Chiedere la chiusura dei programmi prima dello spegnimento**, con un anticipo regolabile da 5 a 600 secondi.
 - **Programmare solo la chiusura dei programmi**, senza spegnere il PC.
 - **Chiudere subito le finestre aperte**, dopo una conferma.
@@ -35,9 +35,11 @@ L’app usa Windows Forms e il runtime **.NET Framework 4.x**. Lo script di comp
 
 ## Come si usa
 
-### Spegnere il computer
+### Spegnere o riavviare il computer
 
-Nel riquadro **Spegnimento computer**, scegli **Tra** e indica i minuti, oppure seleziona **Alle ore** e imposta l’orario. Premi **Programma** per attivare lo spegnimento e **Annulla** per revocarlo.
+Nel riquadro **Spegnimento o riavvio computer**, scegli **Spegni il computer** oppure **Riavvia il computer** dal menu **Azione**. Poi scegli **Tra** e indica i minuti, oppure seleziona **Alle ore** e imposta l’orario. Premi **Programma** per attivare il timer e **Annulla** per revocarlo.
+
+La scelta dell’azione viene memorizzata quando premi **Programma**: cambiare il menu non modifica un timer già attivo. Per sostituirlo, premi nuovamente **Programma**. Il conto alla rovescia e l’icona nell’area di notifica indicano l’azione programmata.
 
 Se vuoi chiedere ai programmi di chiudersi prima dello spegnimento, lascia selezionato **Chiudi i programmi** e scegli quanti secondi prima inviare la richiesta.
 
@@ -53,7 +55,7 @@ Con un timer attivo, la **X** nasconde la finestra nell’area di notifica. Fai 
 
 > **Salva il lavoro prima di programmare lo spegnimento.** La richiesta iniziale di chiusura consente alle app di mostrare le proprie finestre di salvataggio, ma non garantisce che il lavoro venga salvato: alla scadenza, lo spegnimento di Windows può forzare la chiusura delle applicazioni.
 
-- Lo spegnimento è affidato al comando di sistema `shutdown`. **Rimane programmato anche dopo l’uscita dall’app**. Per revocarlo, usa **Annulla** oppure esegui `shutdown /a` nel terminale.
+- Lo spegnimento o il riavvio è affidato al comando di sistema `shutdown`. **Rimane programmato anche dopo l’uscita dall’app**. Per revocarlo, usa **Annulla** oppure esegui `shutdown /a` nel terminale.
 - La chiusura dei programmi, sia autonoma sia anticipata rispetto allo spegnimento, funziona **solo mentre l’app è in esecuzione**, anche nell’area di notifica.
 - Avviare un nuovo timer di spegnimento annulla prima un eventuale spegnimento già programmato nel sistema. Anche **Annulla** agisce sullo spegnimento di sistema.
 - Se l’orario scelto è già passato, il timer viene impostato per il giorno successivo. L’intervallo in minuti va da 1 a 10.080, cioè 7 giorni.
